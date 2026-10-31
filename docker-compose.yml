@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: brightloop_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-brightloop}
+      POSTGRES_USER: ${POSTGRES_USER:-brightloop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oddo}
+    volumes:
+      - brightloop_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: brightloop_api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-brightloop}:${POSTGRES_PASSWORD:-oddo}@db:5432/${POSTGRES_DB:-brightloop}
+      JWT_SECRET: ${JWT_SECRET:-brightloop-super-secure-jwt-secret-key-production-ready}
+      JWT_ALGORITHM: HS256
+      AUTO_CREATE_SCHEMA: "true"
+      RUN_MIGRATIONS: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  
+
+volumes:
+  brightloop_postgres_data:

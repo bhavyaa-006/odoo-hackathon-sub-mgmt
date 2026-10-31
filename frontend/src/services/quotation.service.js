@@ -1,37 +1,54 @@
 import api from './api.js';
-import mockAdapter, { isMockApiEnabled } from '../mocks/mockAdapter.js';
 
 export const quotationService = {
   /**
-   * GET /portal/quotations
+   * Customer Quotations
    */
   getQuotations: async (params = {}) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.getQuotations(params);
-    }
     const response = await api.get('/portal/quotations', { params });
     return response.data;
   },
 
-  /**
-   * GET /portal/quotations/{id}
-   */
   getQuotation: async (id) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.getQuotation(id);
-    }
     const response = await api.get(`/portal/quotations/${id}`);
     return response.data;
   },
 
-  /**
-   * POST /portal/quotations/{id}/accept
-   */
   acceptQuotation: async (id) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.acceptQuotation(id);
-    }
     const response = await api.post(`/portal/quotations/${id}/accept`);
+    return response.data;
+  },
+
+  /**
+   * Staff Quotations
+   */
+  getStaffQuotations: async (params = {}) => {
+    const response = await api.get('/staff/quotations', { params });
+    return response.data;
+  },
+
+  getStaffQuotation: async (id) => {
+    const response = await api.get(`/staff/quotations/${id}`);
+    return response.data;
+  },
+
+  getQuotationTemplates: async () => {
+    const response = await api.get('/staff/quotation-templates');
+    return response.data;
+  },
+
+  createQuotation: async (data) => {
+    const response = await api.post('/staff/quotations', data);
+    return response.data;
+  },
+
+  sendQuotation: async (id) => {
+    const response = await api.post(`/staff/quotations/${id}/send`);
+    return response.data;
+  },
+
+  confirmQuotation: async (id) => {
+    const response = await api.post(`/staff/quotations/${id}/confirm`);
     return response.data;
   },
 };

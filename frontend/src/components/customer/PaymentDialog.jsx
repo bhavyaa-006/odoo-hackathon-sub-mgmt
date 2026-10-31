@@ -7,7 +7,6 @@ import Money from '../ui/Money';
 import invoiceService from '../../services/invoice.service';
 import { useToast } from '../../hooks/useToast';
 import { toMinorUnits } from '../../utils/formatters';
-import { isMockApiEnabled } from '../../mocks/mockAdapter';
 
 export const PaymentDialog = ({
   isOpen,
@@ -49,11 +48,7 @@ export const PaymentDialog = ({
         reference: `PAY-${Date.now().toString().slice(-6)}`,
       });
 
-      toast.success(
-        res.is_simulated
-          ? `[Simulated] Payment of ₹${payAmountMajor} recorded. Invoice updated locally.`
-          : res.message || 'Payment recorded successfully!'
-      );
+      toast.success(res.message || 'Payment recorded successfully!');
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -79,15 +74,6 @@ export const PaymentDialog = ({
           </div>
         )}
 
-        {/* Mock Mode Simulation Notice */}
-        {isMockApiEnabled() && (
-          <div className="p-3 bg-[#E3F2FD] border border-[#1E88E5]/30 rounded-lg flex items-center gap-2 text-xs text-[#1F4E79]">
-            <ShieldCheck className="w-4 h-4 text-[#00796B] shrink-0" />
-            <span>
-              <strong>Simulated Payment (Mock Mode):</strong> No real money will be transferred. The invoice balance and payment ledger will update locally.
-            </span>
-          </div>
-        )}
 
         {/* Invoice Summary Box */}
         <div className="p-3.5 bg-[#F5F5F5] rounded-lg border border-[#4B6584]/20 space-y-1.5 text-xs">

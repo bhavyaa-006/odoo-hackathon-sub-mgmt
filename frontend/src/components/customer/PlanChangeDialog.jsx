@@ -1,13 +1,12 @@
-import { useState } from 'react';
-import { ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRight, AlertCircle } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Money from '../ui/Money';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import subscriptionService, { AVAILABLE_PLANS } from '../../services/subscription.service';
+import subscriptionService from '../../services/subscription.service';
 import { useToast } from '../../hooks/useToast';
 import { formatDate } from '../../utils/formatters';
-import { isMockApiEnabled } from '../../mocks/mockAdapter';
 
 export const PlanChangeDialog = ({
   isOpen,
@@ -16,14 +15,31 @@ export const PlanChangeDialog = ({
   onSuccess,
 }) => {
   const toast = useToast();
-  const [selectedPlanId, setSelectedPlanId] = useState(
-    AVAILABLE_PLANS[2].id // default to next tier
-  );
+  const [plans, setPlans] = useState([]);
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [timing, setTiming] = useState('immediate'); // 'immediate' | 'at_renewal'
   const [preview, setPreview] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    subscriptionService
+      .getAvailablePlans()
+      .then((data) => {
+        if (!isMounted) return;
+        const list = Array.isArray(data) ? data : data?.items || [];
+        setPlans(list);
+        if (list.length > 0) {
+          setSelectedPlanId(list[0]?.id || null);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const fetchPreview = async (planId, selectedTiming) => {
     setIsPreviewLoading(true);
@@ -59,11 +75,7 @@ export const PlanChangeDialog = ({
         new_plan_id: selectedPlanId,
         timing,
       });
-      toast.success(
-        res.is_simulated
-          ? '[Simulated] Plan updated successfully in Mock Mode. Subscription updated locally.'
-          : res.message || 'Plan updated successfully!'
-      );
+      toast.success(res.message || 'Plan updated successfully!');
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -89,15 +101,6 @@ export const PlanChangeDialog = ({
           </div>
         )}
 
-        {/* Mock Mode Simulation Notice */}
-        {isMockApiEnabled() && (
-          <div className="p-3 bg-[#E3F2FD] border border-[#1E88E5]/30 rounded-lg flex items-center gap-2 text-xs text-[#1F4E79]">
-            <ShieldCheck className="w-4 h-4 text-[#00796B] shrink-0" />
-            <span>
-              <strong>Simulated Plan Change (Mock Mode):</strong> No charges will occur. The subscription tier will update locally.
-            </span>
-          </div>
-        )}
 
         {/* 1. Plan Selection */}
         <div>
@@ -105,52 +108,60 @@ export const PlanChangeDialog = ({
             Select New Subscription Plan
           </label>
           <div className="space-y-2">
-            {AVAILABLE_PLANS.map((plan) => {
-              const isCurrent = plan.name === subscription.plan_name;
-              const isSelected = plan.id === selectedPlanId;
+            {plans.length === 0 ? (
+              <div className="p-4 text-center text-xs text-[#4B6584] bg-[#F5F5F5] rounded-lg border border-[#4B6584]/15">
+                No alternative subscription plans currently available.
+              </div>
+            ) : (
+              plans.map((plan) => {
+                const isCurrent = plan.name === subscription.plan_name;
+                const isSelected = plan.id === selectedPlanId;
+                const priceMinor = plan.price_minor ?? (plan.price ? Math.round(Number(plan.price) * 100) : 0);
+                const billingFreq = plan.frequency || plan.billing_interval || 'monthly';
 
-              return (
-                <div
-                  key={plan.id}
-                  onClick={() => !isCurrent && handleSelectPlan(plan.id)}
-                  className={`
-                    p-3.5 rounded-lg border transition-all cursor-pointer flex items-center justify-between
-                    ${
-                      isCurrent
-                        ? 'bg-[#F5F5F5] border-[#4B6584]/20 opacity-60 cursor-not-allowed'
-                        : isSelected
-                        ? 'border-[#1F4E79] bg-[#E3F2FD]/50 ring-2 ring-[#1F4E79]/20'
-                        : 'border-[#4B6584]/20 hover:border-[#1F4E79] bg-white'
-                    }
-                  `}
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-heading font-bold text-sm text-[#333333]">
-                        {plan.name}
-                      </span>
-                      {isCurrent && (
-                        <span className="text-[10px] uppercase font-bold bg-[#4B6584]/15 text-[#4B6584] px-2 py-0.5 rounded-full">
-                          Current Plan
+                return (
+                  <div
+                    key={plan.id}
+                    onClick={() => !isCurrent && handleSelectPlan(plan.id)}
+                    className={`
+                      p-3.5 rounded-lg border transition-all cursor-pointer flex items-center justify-between
+                      ${
+                        isCurrent
+                          ? 'bg-[#F5F5F5] border-[#4B6584]/20 opacity-60 cursor-not-allowed'
+                          : isSelected
+                          ? 'border-[#1F4E79] bg-[#E3F2FD]/50 ring-2 ring-[#1F4E79]/20'
+                          : 'border-[#4B6584]/20 hover:border-[#1F4E79] bg-white'
+                      }
+                    `}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-heading font-bold text-sm text-[#333333]">
+                          {plan.name}
                         </span>
-                      )}
+                        {isCurrent && (
+                          <span className="text-[10px] uppercase font-bold bg-[#4B6584]/15 text-[#4B6584] px-2 py-0.5 rounded-full">
+                            Current Plan
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#4B6584] mt-0.5">{plan.description}</p>
                     </div>
-                    <p className="text-xs text-[#4B6584] mt-0.5">{plan.description}</p>
-                  </div>
 
-                  <div className="text-right shrink-0 ml-3">
-                    <Money
-                      amountMinor={plan.price_minor}
-                      currency={subscription.currency}
-                      className="text-sm font-bold text-[#1F4E79]"
-                    />
-                    <span className="text-[10px] text-[#4B6584] block capitalize">
-                      per {plan.frequency}
-                    </span>
+                    <div className="text-right shrink-0 ml-3">
+                      <Money
+                        amountMinor={priceMinor}
+                        currency={subscription.currency || 'INR'}
+                        className="text-sm font-bold text-[#1F4E79]"
+                      />
+                      <span className="text-[10px] text-[#4B6584] block capitalize">
+                        per {billingFreq}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 

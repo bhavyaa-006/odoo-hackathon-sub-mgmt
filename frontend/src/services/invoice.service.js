@@ -1,48 +1,54 @@
 import api from './api.js';
-import mockAdapter, { isMockApiEnabled } from '../mocks/mockAdapter.js';
 
 export const invoiceService = {
   /**
-   * GET /portal/invoices
+   * Customer Portal Invoices
    */
   getInvoices: async (params = {}) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.getInvoices(params);
-    }
     const response = await api.get('/portal/invoices', { params });
     return response.data;
   },
 
-  /**
-   * GET /portal/invoices/{id}
-   */
   getInvoice: async (id) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.getInvoice(id);
-    }
     const response = await api.get(`/portal/invoices/${id}`);
     return response.data;
   },
 
-  /**
-   * POST /portal/invoices/{id}/pay
-   */
   payInvoice: async (id, paymentData) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.payInvoice(id, paymentData);
-    }
     const response = await api.post(`/portal/invoices/${id}/pay`, paymentData);
     return response.data;
   },
 
-  /**
-   * GET /portal/invoices/{id}/print
-   */
   getInvoicePrintData: async (id) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.getInvoice(id);
-    }
     const response = await api.get(`/portal/invoices/${id}/print`);
+    return response.data;
+  },
+
+  /**
+   * Staff & Admin Invoices (FastAPI Billing Service endpoints)
+   */
+  getStaffInvoices: async (params = {}) => {
+    const response = await api.get('/invoices', { params });
+    return response.data;
+  },
+
+  getStaffInvoice: async (id) => {
+    const response = await api.get(`/invoices/${id}`);
+    return response.data;
+  },
+
+  confirmInvoice: async (id) => {
+    const response = await api.post(`/invoices/${id}/confirm`);
+    return response.data;
+  },
+
+  cancelInvoiceWithCreditNote: async (id, data = {}) => {
+    const response = await api.post(`/invoices/${id}/void`, data);
+    return response.data;
+  },
+
+  getOverdueSummary: async () => {
+    const response = await api.get('/staff/overdue');
     return response.data;
   },
 };

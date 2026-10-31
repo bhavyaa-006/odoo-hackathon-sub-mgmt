@@ -4,6 +4,7 @@ import { ROUTES } from './routeConfig';
 // Route Guards
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import PublicRoute from '../components/auth/PublicRoute';
+import FinanceGuard from '../components/staff/FinanceGuard';
 
 // Public Pages
 import LandingPage from '../pages/LandingPage';
@@ -28,8 +29,34 @@ import NotificationsPage from '../pages/customer/notifications/NotificationsPage
 import ProfilePage from '../pages/customer/profile/ProfilePage';
 import CustomerNotFound from '../pages/customer/CustomerNotFound';
 
-// Other Portal Placeholders (Phase 3 & 4)
-import StaffPortalPlaceholder from '../pages/placeholders/StaffPortalPlaceholder';
+// Staff Workspace Components & Pages (Phase 3)
+import StaffLayout from '../components/staff/StaffLayout';
+import StaffDashboard from '../pages/staff/Dashboard';
+import StaffCustomersPage from '../pages/staff/customers/CustomersPage';
+import StaffCustomerDetailPage from '../pages/staff/customers/CustomerDetailPage';
+import StaffQuotationsPage from '../pages/staff/quotations/QuotationsPage';
+import StaffCreateQuotationPage from '../pages/staff/quotations/CreateQuotationPage';
+import StaffQuotationDetailPage from '../pages/staff/quotations/QuotationDetailPage';
+import StaffSubscriptionsPage from '../pages/staff/subscriptions/SubscriptionsPage';
+import StaffSubscriptionDetailPage from '../pages/staff/subscriptions/SubscriptionDetailPage';
+import StaffInvoicesPage from '../pages/staff/invoices/InvoicesPage';
+import StaffInvoiceDetailPage from '../pages/staff/invoices/InvoiceDetailPage';
+import StaffOverduePage from '../pages/staff/overdue/OverduePage';
+import StaffPaymentsPage from '../pages/staff/payments/PaymentsPage';
+import StaffRecordPaymentPage from '../pages/staff/payments/RecordPaymentPage';
+import StaffPaymentDetailPage from '../pages/staff/payments/PaymentDetailPage';
+import StaffDunningPage from '../pages/staff/dunning/DunningPage';
+import StaffDunningDetailPage from '../pages/staff/dunning/DunningDetailPage';
+import StaffCreditNotesPage from '../pages/staff/credit-notes/CreditNotesPage';
+import StaffCreditNoteDetailPage from '../pages/staff/credit-notes/CreditNoteDetailPage';
+import StaffBillingRunsPage from '../pages/staff/billing-runs/BillingRunsPage';
+import StaffBillingRunDetailPage from '../pages/staff/billing-runs/BillingRunDetailPage';
+import StaffFinanceDashboard from '../pages/staff/finance/FinanceDashboard';
+import StaffIntegrityPage from '../pages/staff/integrity/IntegrityPage';
+import StaffNotificationsPage from '../pages/staff/notifications/NotificationsPage';
+import StaffNotFound from '../pages/staff/StaffNotFound';
+
+// Phase 4 Admin Placeholder
 import AdminPortalPlaceholder from '../pages/placeholders/AdminPortalPlaceholder';
 
 export const AppRouter = () => {
@@ -98,17 +125,49 @@ export const AppRouter = () => {
           <Route path="404" element={<CustomerNotFound />} />
         </Route>
 
-        {/* Protected Staff Destination Placeholder */}
+        {/* Staff Workspace (Protected, roles: ['staff', 'finance', 'admin']) */}
         <Route
-          path={ROUTES.STAFF_DASHBOARD}
+          path="/staff"
           element={
-            <ProtectedRoute allowedRoles={['staff', 'finance']}>
-              <StaffPortalPlaceholder />
+            <ProtectedRoute allowedRoles={['staff', 'finance', 'admin']}>
+              <StaffLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<StaffDashboard />} />
+          <Route path="customers" element={<StaffCustomersPage />} />
+          <Route path="customers/:id" element={<StaffCustomerDetailPage />} />
+          <Route path="quotations" element={<StaffQuotationsPage />} />
+          <Route path="quotations/new" element={<StaffCreateQuotationPage />} />
+          <Route path="quotations/:id" element={<StaffQuotationDetailPage />} />
+          <Route path="subscriptions" element={<StaffSubscriptionsPage />} />
+          <Route path="subscriptions/:id" element={<StaffSubscriptionDetailPage />} />
+          <Route path="invoices" element={<StaffInvoicesPage />} />
+          <Route path="invoices/:id" element={<StaffInvoiceDetailPage />} />
+          <Route path="overdue" element={<StaffOverduePage />} />
+          <Route path="payments" element={<StaffPaymentsPage />} />
+          <Route path="payments/new" element={<StaffRecordPaymentPage />} />
+          <Route path="payments/:id" element={<StaffPaymentDetailPage />} />
+          <Route path="dunning" element={<StaffDunningPage />} />
+          <Route path="dunning/:id" element={<StaffDunningDetailPage />} />
+          <Route path="credit-notes" element={<StaffCreditNotesPage />} />
+          <Route path="credit-notes/:id" element={<StaffCreditNoteDetailPage />} />
+          <Route path="billing-runs" element={<StaffBillingRunsPage />} />
+          <Route path="billing-runs/:id" element={<StaffBillingRunDetailPage />} />
+          <Route
+            path="finance"
+            element={
+              <FinanceGuard>
+                <StaffFinanceDashboard />
+              </FinanceGuard>
+            }
+          />
+          <Route path="integrity" element={<StaffIntegrityPage />} />
+          <Route path="notifications" element={<StaffNotificationsPage />} />
+          <Route path="404" element={<StaffNotFound />} />
+        </Route>
 
-        {/* Protected Admin Destination Placeholder */}
+        {/* Protected Admin Destination Placeholder (Phase 4) */}
         <Route
           path={ROUTES.ADMIN_DASHBOARD}
           element={

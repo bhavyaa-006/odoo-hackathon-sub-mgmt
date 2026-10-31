@@ -19,8 +19,33 @@ export const ROUTES = {
   CUSTOMER_PROFILE: '/customer/profile',
   CUSTOMER_404: '/customer/404',
 
-  // Other Portals Placeholders
+  // Staff Workspace Routes
   STAFF_DASHBOARD: '/staff',
+  STAFF_CUSTOMERS: '/staff/customers',
+  STAFF_CUSTOMER_DETAIL: '/staff/customers/:id',
+  STAFF_QUOTATIONS: '/staff/quotations',
+  STAFF_QUOTATION_NEW: '/staff/quotations/new',
+  STAFF_QUOTATION_DETAIL: '/staff/quotations/:id',
+  STAFF_SUBSCRIPTIONS: '/staff/subscriptions',
+  STAFF_SUBSCRIPTION_DETAIL: '/staff/subscriptions/:id',
+  STAFF_OVERDUE: '/staff/overdue',
+  STAFF_PAYMENTS: '/staff/payments',
+  STAFF_PAYMENT_NEW: '/staff/payments/new',
+  STAFF_PAYMENT_DETAIL: '/staff/payments/:id',
+  STAFF_INVOICES: '/staff/invoices',
+  STAFF_INVOICE_DETAIL: '/staff/invoices/:id',
+  STAFF_DUNNING: '/staff/dunning',
+  STAFF_DUNNING_DETAIL: '/staff/dunning/:id',
+  STAFF_CREDIT_NOTES: '/staff/credit-notes',
+  STAFF_CREDIT_NOTE_DETAIL: '/staff/credit-notes/:id',
+  STAFF_BILLING_RUNS: '/staff/billing-runs',
+  STAFF_BILLING_RUN_DETAIL: '/staff/billing-runs/:id',
+  STAFF_FINANCE: '/staff/finance',
+  STAFF_INTEGRITY: '/staff/integrity',
+  STAFF_NOTIFICATIONS: '/staff/notifications',
+  STAFF_404: '/staff/404',
+
+  // Admin Console Placeholder (Phase 4)
   ADMIN_DASHBOARD: '/admin',
 };
 

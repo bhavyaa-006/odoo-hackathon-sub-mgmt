@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, Bell, User, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { isMockApiEnabled } from '../../mocks/mockAdapter';
 
 export const CustomerTopbar = ({ onOpenMobileMenu, unreadCount = 0 }) => {
   const { user, logout } = useAuth();
@@ -57,14 +56,8 @@ export const CustomerTopbar = ({ onOpenMobileMenu, unreadCount = 0 }) => {
         </h1>
       </div>
 
-      {/* Right: Mock mode pill + Notification shortcut + User Dropdown */}
+      {/* Right: Notification shortcut + User Dropdown */}
       <div className="flex items-center gap-3 sm:gap-4">
-        {isMockApiEnabled() && (
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#E3F2FD] text-[#1F4E79] border border-[#1E88E5]/30 select-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00796B] animate-pulse" />
-            Mock Data Mode
-          </span>
-        )}
 
         {/* Notifications Shortcut */}
         <Link

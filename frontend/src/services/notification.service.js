@@ -1,15 +1,11 @@
 import api from './api.js';
-import mockAdapter, { isMockApiEnabled } from '../mocks/mockAdapter.js';
 
 export const notificationService = {
   /**
-   * GET /outbox
+   * Customer Notifications
    */
   getOutboxNotifications: async (params = {}) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.getNotifications(params);
-    }
-    const response = await api.get('/outbox', { params });
+    const response = await api.get('/portal/notifications', { params });
     const data = response.data;
     if (Array.isArray(data)) {
       const unreadCount = data.filter((m) => !m.is_read).length;
@@ -18,14 +14,21 @@ export const notificationService = {
     return data;
   },
 
+  markAsRead: async () => {
+    const response = await api.post('/portal/notifications/read-all');
+    return response.data;
+  },
+
   /**
-   * PATCH /outbox/{id}/read
+   * Staff Notifications
    */
-  markAsRead: async (id) => {
-    if (isMockApiEnabled()) {
-      return mockAdapter.markNotificationRead(id);
-    }
-    const response = await api.patch(`/outbox/${id}/read`);
+  getStaffNotifications: async (params = {}) => {
+    const response = await api.get('/staff/notifications', { params });
+    return response.data;
+  },
+
+  retryNotification: async (id) => {
+    const response = await api.post(`/staff/notifications/${id}/retry`);
     return response.data;
   },
 };
