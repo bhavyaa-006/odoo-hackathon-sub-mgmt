@@ -392,16 +392,16 @@ def _get_invoice_or_404(db: Session, invoice_id: uuid.UUID) -> Invoice:
 
 def list_invoices(
     db: Session,
-    customer_id: uuid.UUID | None,
-    subscription_id: uuid.UUID | None,
-    status_filter: InvoiceStatus | None,
-    kind_filter: InvoiceKind | None,
-    overdue_only: bool,
-    date_from: date | None,
-    date_to: date | None,
-    q: str | None,
-    page: int,
-    page_size: int,
+    customer_id: uuid.UUID | None = None,
+    subscription_id: uuid.UUID | None = None,
+    status_filter: InvoiceStatus | None = None,
+    kind_filter: InvoiceKind | None = None,
+    overdue_only: bool = False,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    q: str | None = None,
+    page: int = 1,
+    page_size: int = 25,
 ) -> tuple[list[Invoice], int]:
     today = date.today()
 

@@ -76,11 +76,11 @@ def check_discount_eligibility(
     _user: StaffOrAdminUser,
     code: Annotated[str, Query(min_length=1, max_length=80, description="Discount code to validate")],
     invoice_subtotal: Annotated[float, Query(gt=0, description="Invoice subtotal in INR before discounts")],
-    total_quantity: Annotated[int, Query(ge=0, default=0)],
-    subscription_id: Annotated[uuid.UUID | None, Query(default=None)],
-    customer_id: Annotated[uuid.UUID | None, Query(default=None)],
-    plan_ids: Annotated[list[uuid.UUID], Query(default_factory=list)],
-    product_ids: Annotated[list[uuid.UUID], Query(default_factory=list)],
+    total_quantity: Annotated[int, Query(ge=0)] = 0,
+    subscription_id: Annotated[uuid.UUID | None, Query()] = None,
+    customer_id: Annotated[uuid.UUID | None, Query()] = None,
+    plan_ids: Annotated[list[uuid.UUID] | None, Query()] = None,
+    product_ids: Annotated[list[uuid.UUID] | None, Query()] = None,
 ) -> DiscountEligibilityResponse:
     """
     Verify that a discount code is currently active, within its validity window,

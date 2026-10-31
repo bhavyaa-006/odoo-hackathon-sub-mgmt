@@ -3,10 +3,8 @@ FastAPI dependency functions shared across all services.
 
 Provides:
   - get_db / get_session — yields a SQLAlchemy Session per request
-  - get_current_user     — stub reading user identity from X-User-Id / X-User-Role
-                           headers (replaced when auth service is complete)
-  - get_current_principal — JWT-based principal (for product service; wired to stub
-                            until auth service is live)
+  - get_current_user     — authenticates via Bearer JWT token (with header fallback)
+  - get_current_principal — Principal representation for product/catalog routes
   - Annotated type aliases: DbSession, CurrentUser, AdminUser, StaffOrAdminUser
 """
 from __future__ import annotations
@@ -19,6 +17,7 @@ from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.security import decode_access_token
 from app.database import SessionLocal
 
 # ---------------------------------------------------------------------------
@@ -41,22 +40,32 @@ DbSession = Annotated[Session, Depends(get_db)]
 
 
 # ---------------------------------------------------------------------------
-# Auth stub (header-based)
+# Authentication & User Identity
 # ---------------------------------------------------------------------------
-# NOTE: Replace with real JWT dependency once the auth service is implemented.
-# Callers pass role via X-User-Role header so all services can be developed
-# and tested independently.
+
+_bearer_scheme = HTTPBearer(auto_error=False)
+VALID_ROLES = frozenset({"admin", "staff", "customer"})
+
 
 class _UserStub:
-    """Minimal user representation used before the real auth service exists."""
+    """Authenticated user representation passed to endpoint handlers."""
 
-    def __init__(self, user_id: str, role: str) -> None:
+    def __init__(
+        self,
+        user_id: str,
+        role: str,
+        email: str | None = None,
+        name: str | None = None,
+        company_name: str | None = None,
+    ) -> None:
         try:
             self.id = uuid.UUID(user_id)
         except (ValueError, AttributeError):
             self.id = uuid.uuid4()
         self.role = role
-        # Compatibility attribute used by product service
+        self.email = email or f"{role}@brightloop.io"
+        self.name = name or role.capitalize()
+        self.company_name = company_name
         self.subject = str(self.id)
 
     @property
@@ -73,29 +82,71 @@ class _UserStub:
 
 
 def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
     x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
     x_user_role: Annotated[str | None, Header(alias="X-User-Role")] = None,
+    db: Session = Depends(get_db),
 ) -> _UserStub:
     """
-    Auth stub: reads user identity from request headers.
-
-    Expected headers:
-      X-User-Id:   UUID of the acting user
-      X-User-Role: one of admin | staff | customer
-
-    Both headers are required. A real JWT implementation will replace this.
+    Authenticate the caller using either:
+    1. Standard JWT Bearer token (Authorization: Bearer <token>)
+    2. Header stub (X-User-Id and X-User-Role) for testing
     """
-    if not x_user_id or not x_user_role:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="X-User-Id and X-User-Role headers are required (auth stub).",
-        )
-    if x_user_role not in ("admin", "staff", "customer"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Unknown role '{x_user_role}'. Must be admin, staff, or customer.",
-        )
-    return _UserStub(user_id=x_user_id, role=x_user_role)
+    # 1. Bearer JWT Path
+    if credentials is not None and credentials.credentials:
+        try:
+            payload = decode_access_token(credentials.credentials)
+            subject = payload.get("sub")
+            role = payload.get("role")
+            if not isinstance(subject, str) or role not in VALID_ROLES:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid authentication token claims.",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
+            # Attempt database user enrichment if user table exists
+            email = None
+            name = None
+            company_name = None
+            try:
+                from app.auth.models import User
+                db_user = db.query(User).filter(User.id == uuid.UUID(subject)).first()
+                if db_user:
+                    email = db_user.email
+                    name = db_user.name
+                    company_name = db_user.company_name
+            except Exception:
+                pass
+
+            return _UserStub(
+                user_id=subject,
+                role=role,
+                email=email,
+                name=name,
+                company_name=company_name,
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=str(exc),
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from exc
+
+    # 2. Header-based stub path
+    if x_user_id and x_user_role:
+        if x_user_role not in VALID_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Unknown role '{x_user_role}'. Must be admin, staff, or customer.",
+            )
+        return _UserStub(user_id=x_user_id, role=x_user_role)
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required. Please provide a Bearer token or identification headers.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def _require_admin(user: _UserStub = Depends(get_current_user)) -> _UserStub:
@@ -117,7 +168,7 @@ def _require_staff_or_admin(user: _UserStub = Depends(get_current_user)) -> _Use
 
 
 # ---------------------------------------------------------------------------
-# JWT-based principal (used by product service — wired to stub until auth live)
+# Principal helper (for product service compatibility)
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -126,48 +177,8 @@ class Principal:
     role: str
 
 
-_bearer_scheme = HTTPBearer(auto_error=False)
-VALID_ROLES = frozenset({"admin", "staff", "customer"})
-
-
-def get_current_principal(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
-    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
-    x_user_role: Annotated[str | None, Header(alias="X-User-Role")] = None,
-) -> Principal:
-    """
-    Returns a Principal from either:
-      1. Bearer JWT token (when auth service is live), or
-      2. X-User-Id / X-User-Role headers (stub mode, current default).
-    """
-    if credentials is not None:
-        # Real JWT path — decode when auth service is available
-        try:
-            from app.core.security import decode_access_token
-            payload = decode_access_token(credentials.credentials)
-            subject = payload.get("sub")
-            role = payload.get("role")
-            if not isinstance(subject, str) or role not in VALID_ROLES:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication token.",
-                )
-            return Principal(subject=subject, role=role)
-        except ImportError:
-            pass  # auth service not yet implemented, fall through to stub
-
-    # Header stub path
-    if not x_user_id or not x_user_role:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required.",
-        )
-    if x_user_role not in VALID_ROLES:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Unknown role '{x_user_role}'.",
-        )
-    return Principal(subject=x_user_id, role=x_user_role)
+def get_current_principal(user: _UserStub = Depends(get_current_user)) -> Principal:
+    return Principal(subject=str(user.id), role=user.role)
 
 
 def require_admin(principal: Principal = Depends(get_current_principal)) -> Principal:
