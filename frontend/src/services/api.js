@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export const TOKEN_STORAGE_KEY = 'brightloop_auth_token';
 
@@ -16,13 +16,14 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     try {
-      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-      if (token && !config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${token}`;
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
+        const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+        if (token && !config.headers.Authorization) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
-    } catch (e) {
+    } catch {
       // LocalStorage access issues (e.g. sandboxed iframe or private browsing)
-      console.warn('Unable to access localStorage for auth token', e);
     }
     return config;
   },

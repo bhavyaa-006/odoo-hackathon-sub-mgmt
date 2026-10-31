@@ -1,6 +1,5 @@
-import api, { TOKEN_STORAGE_KEY } from './api';
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_AUTH === 'true';
+import api, { TOKEN_STORAGE_KEY } from './api.js';
+import { isMockApiEnabled } from '../mocks/mockAdapter.js';
 
 // Isolated Mock Adapter for offline development & frontend testing when backend is not running
 const mockStorage = {
@@ -19,7 +18,7 @@ const mockStorage = {
         password: 'Password123!',
         name: 'Alex Mercer',
         role: 'customer',
-        company_name: 'Mercer Media',
+        company_name: 'Mercer Media Private Limited',
       },
       {
         id: 'usr-staff-1',
@@ -50,9 +49,9 @@ const mockStorage = {
   },
 };
 
-const mockAdapter = {
+const mockAuthAdapter = {
   login: async ({ email, password }) => {
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 400));
     const users = mockStorage.getUsers();
     const user = users.find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
@@ -64,7 +63,10 @@ const mockAdapter = {
       throw error;
     }
     const token = `mock-jwt-token-for-${user.id}-${Date.now()}`;
-    sessionStorage.setItem('brightloop_mock_session', JSON.stringify({ token, user }));
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('brightloop_mock_session', JSON.stringify({ token, user }));
+      sessionStorage.removeItem('brightloop_explicit_logout');
+    }
     return {
       access_token: token,
       token_type: 'bearer',
@@ -72,8 +74,14 @@ const mockAdapter = {
   },
 
   getCurrentUser: async () => {
-    await new Promise((r) => setTimeout(r, 300));
-    const sessionStr = sessionStorage.getItem('brightloop_mock_session');
+    await new Promise((r) => setTimeout(r, 150));
+    let sessionStr = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('brightloop_mock_session') : null;
+    if (!sessionStr && isMockApiEnabled()) {
+      const seeded = authService.seedMockCustomer();
+      if (seeded) {
+        sessionStr = JSON.stringify(seeded);
+      }
+    }
     if (!sessionStr) {
       const error = new Error('Unauthorized');
       error.response = { status: 401 };
@@ -90,84 +98,119 @@ const mockAdapter = {
   },
 
   signup: async ({ name, email, password, company_name }) => {
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 450));
     const users = mockStorage.getUsers();
     if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
       const error = new Error('An account with this email already exists.');
       error.userMessage = 'An account with this email already exists.';
-      error.response = { status: 409, data: { detail: 'Email already registered.' } };
+      error.response = { status: 409, data: { detail: error.userMessage } };
       throw error;
     }
     const newUser = {
-      id: `usr-cust-${Date.now()}`,
-      email,
+      id: `usr-customer-${Date.now()}`,
+      email: email.trim().toLowerCase(),
       password,
-      name,
+      name: name.trim(),
       role: 'customer',
-      company_name: company_name || null,
+      company_name: company_name ? company_name.trim() : null,
     };
     mockStorage.saveUser(newUser);
+    const token = `mock-jwt-token-for-${newUser.id}-${Date.now()}`;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('brightloop_mock_session', JSON.stringify({ token, user: newUser }));
+      sessionStorage.removeItem('brightloop_explicit_logout');
+    }
     return {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-      role: newUser.role,
-      message: 'Account created successfully.',
+      access_token: token,
+      token_type: 'bearer',
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+        company_name: newUser.company_name,
+      },
     };
   },
 
-  forgotPassword: async ({ email }) => {
-    await new Promise((r) => setTimeout(r, 500));
-    // Always returns generic confirmation message, email is accepted
-    if (!email) {
-      const error = new Error('Email is required.');
-      error.userMessage = 'Email address is required.';
-      throw error;
-    }
+  forgotPassword: async () => {
+    await new Promise((r) => setTimeout(r, 300));
     return {
-      message: 'If an account exists for this email, password reset instructions have been sent.',
+      message: 'If an account exists with this email, you will receive password reset instructions.',
     };
   },
 
   resetPassword: async ({ token, new_password }) => {
-    await new Promise((r) => setTimeout(r, 600));
-    if (!token || token.trim() === '' || token === 'invalid' || token === 'expired') {
-      const error = new Error('Invalid or expired reset token.');
-      error.userMessage = 'This password reset link is invalid or has expired. Please request a new one.';
-      error.response = { status: 400, data: { detail: 'Invalid or expired token.' } };
+    await new Promise((r) => setTimeout(r, 350));
+    if (!token || token.length < 10) {
+      const error = new Error('This password reset link is invalid or has expired.');
+      error.userMessage = 'This password reset link is invalid or has expired.';
+      error.response = { status: 400, data: { detail: error.userMessage } };
       throw error;
     }
-    if (!new_password) {
-      const error = new Error('New password is required.');
-      error.userMessage = 'New password is required.';
-      throw error;
+    const users = mockStorage.getUsers();
+    if (users.length > 0) {
+      users[0].password = new_password;
+      try {
+        localStorage.setItem('brightloop_mock_users', JSON.stringify(users));
+      } catch {
+        // ignore
+      }
     }
     return {
-      message: 'Password has been successfully reset. You may now sign in.',
+      message: 'Your password has been successfully reset. You may now sign in with your new password.',
     };
   },
 };
 
 export const authService = {
   /**
-   * Submit credentials to authenticate
+   * Seed a mock customer session for immediate preview when mock mode is enabled
+   */
+  seedMockCustomer: () => {
+    try {
+      const token = 'mock-jwt-token-customer-alex-mercer';
+      const user = {
+        id: 'usr-customer-1',
+        email: 'customer@brightloop.io',
+        name: 'Alex Mercer',
+        role: 'customer',
+        company_name: 'Mercer Media Private Limited',
+      };
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      }
+      if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('brightloop_mock_session', JSON.stringify({ token, user }));
+      }
+      return { token, user };
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Authenticate user credentials
    * POST /auth/login
    */
   login: async ({ email, password }) => {
-    if (USE_MOCK) {
-      return mockAdapter.login({ email, password });
+    if (isMockApiEnabled()) {
+      return mockAuthAdapter.login({ email, password });
     }
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('/auth/login', {
+      email: email.trim().toLowerCase(),
+      password,
+    });
     return response.data;
   },
 
   /**
-   * Retrieve authenticated user profile and verified role
+   * Fetch authenticated user identity
    * GET /auth/me
    */
   getCurrentUser: async () => {
-    if (USE_MOCK) {
-      return mockAdapter.getCurrentUser();
+    if (isMockApiEnabled()) {
+      return mockAuthAdapter.getCurrentUser();
     }
     const response = await api.get('/auth/me');
     return response.data;
@@ -178,8 +221,8 @@ export const authService = {
    * POST /auth/signup
    */
   signup: async ({ name, email, password, company_name }) => {
-    if (USE_MOCK) {
-      return mockAdapter.signup({ name, email, password, company_name });
+    if (isMockApiEnabled()) {
+      return mockAuthAdapter.signup({ name, email, password, company_name });
     }
     const payload = {
       name: name.trim(),
@@ -196,8 +239,8 @@ export const authService = {
    * POST /auth/forgot
    */
   forgotPassword: async ({ email }) => {
-    if (USE_MOCK) {
-      return mockAdapter.forgotPassword({ email });
+    if (isMockApiEnabled()) {
+      return mockAuthAdapter.forgotPassword({ email });
     }
     const response = await api.post('/auth/forgot', {
       email: email.trim().toLowerCase(),
@@ -210,10 +253,9 @@ export const authService = {
    * POST /auth/reset
    */
   resetPassword: async ({ token, new_password }) => {
-    if (USE_MOCK) {
-      return mockAdapter.resetPassword({ token, new_password });
+    if (isMockApiEnabled()) {
+      return mockAuthAdapter.resetPassword({ token, new_password });
     }
-    // Include both new_password and password for compatibility with OpenAPI schema variants
     const payload = {
       token,
       new_password,
@@ -228,7 +270,18 @@ export const authService = {
    */
   getToken: () => {
     try {
-      return localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
+      let token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (
+        !token &&
+        isMockApiEnabled() &&
+        typeof sessionStorage !== 'undefined' &&
+        !sessionStorage.getItem('brightloop_explicit_logout')
+      ) {
+        const seeded = authService.seedMockCustomer();
+        token = seeded?.token || null;
+      }
+      return token;
     } catch {
       return null;
     }
@@ -248,8 +301,15 @@ export const authService = {
 
   clearToken: () => {
     try {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      sessionStorage.removeItem('brightloop_mock_session');
+      if (typeof window !== 'undefined') {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(TOKEN_STORAGE_KEY);
+        }
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('brightloop_mock_session');
+          sessionStorage.setItem('brightloop_explicit_logout', 'true');
+        }
+      }
     } catch {
       // ignore
     }

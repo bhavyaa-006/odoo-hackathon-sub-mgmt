@@ -6,7 +6,20 @@ export const ROUTES = {
   CUSTOMER_REGISTER: '/customer/register',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
+
+  // Customer Portal Routes
   CUSTOMER_DASHBOARD: '/customer',
+  CUSTOMER_SUBSCRIPTIONS: '/customer/subscriptions',
+  CUSTOMER_SUBSCRIPTION_DETAIL: '/customer/subscriptions/:id',
+  CUSTOMER_QUOTATIONS: '/customer/quotations',
+  CUSTOMER_QUOTATION_DETAIL: '/customer/quotations/:id',
+  CUSTOMER_INVOICES: '/customer/invoices',
+  CUSTOMER_INVOICE_DETAIL: '/customer/invoices/:id',
+  CUSTOMER_NOTIFICATIONS: '/customer/notifications',
+  CUSTOMER_PROFILE: '/customer/profile',
+  CUSTOMER_404: '/customer/404',
+
+  // Other Portals Placeholders
   STAFF_DASHBOARD: '/staff',
   ADMIN_DASHBOARD: '/admin',
 };

@@ -5,7 +5,7 @@ import { ROUTES } from './routeConfig';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import PublicRoute from '../components/auth/PublicRoute';
 
-// Pages
+// Public Pages
 import LandingPage from '../pages/LandingPage';
 import CustomerLogin from '../pages/CustomerLogin';
 import StaffLogin from '../pages/StaffLogin';
@@ -15,8 +15,20 @@ import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
 import NotFoundPage from '../pages/NotFoundPage';
 
-// Portal Placeholders
-import CustomerPortalPlaceholder from '../pages/placeholders/CustomerPortalPlaceholder';
+// Customer Portal Components & Pages
+import CustomerLayout from '../components/customer/CustomerLayout';
+import CustomerDashboard from '../pages/customer/Dashboard';
+import SubscriptionsPage from '../pages/customer/subscriptions/SubscriptionsPage';
+import SubscriptionDetailPage from '../pages/customer/subscriptions/SubscriptionDetailPage';
+import QuotationsPage from '../pages/customer/quotations/QuotationsPage';
+import QuotationDetailPage from '../pages/customer/quotations/QuotationDetailPage';
+import InvoicesPage from '../pages/customer/invoices/InvoicesPage';
+import InvoiceDetailPage from '../pages/customer/invoices/InvoiceDetailPage';
+import NotificationsPage from '../pages/customer/notifications/NotificationsPage';
+import ProfilePage from '../pages/customer/profile/ProfilePage';
+import CustomerNotFound from '../pages/customer/CustomerNotFound';
+
+// Other Portal Placeholders (Phase 3 & 4)
 import StaffPortalPlaceholder from '../pages/placeholders/StaffPortalPlaceholder';
 import AdminPortalPlaceholder from '../pages/placeholders/AdminPortalPlaceholder';
 
@@ -27,7 +39,7 @@ export const AppRouter = () => {
         {/* Public Landing Page */}
         <Route path={ROUTES.HOME} element={<LandingPage />} />
 
-        {/* Portal Authentication Routes (Redirects authenticated users to their own dashboard) */}
+        {/* Portal Authentication Routes */}
         <Route
           path={ROUTES.CUSTOMER_LOGIN}
           element={
@@ -65,17 +77,28 @@ export const AppRouter = () => {
         <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
         <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
 
-        {/* Protected Customer Destination */}
+        {/* Customer Portal (Protected, role: 'customer') */}
         <Route
-          path={ROUTES.CUSTOMER_DASHBOARD}
+          path="/customer"
           element={
             <ProtectedRoute allowedRoles={['customer']}>
-              <CustomerPortalPlaceholder />
+              <CustomerLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<CustomerDashboard />} />
+          <Route path="subscriptions" element={<SubscriptionsPage />} />
+          <Route path="subscriptions/:id" element={<SubscriptionDetailPage />} />
+          <Route path="quotations" element={<QuotationsPage />} />
+          <Route path="quotations/:id" element={<QuotationDetailPage />} />
+          <Route path="invoices" element={<InvoicesPage />} />
+          <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="404" element={<CustomerNotFound />} />
+        </Route>
 
-        {/* Protected Staff Destination */}
+        {/* Protected Staff Destination Placeholder */}
         <Route
           path={ROUTES.STAFF_DASHBOARD}
           element={
@@ -85,7 +108,7 @@ export const AppRouter = () => {
           }
         />
 
-        {/* Protected Admin Destination */}
+        {/* Protected Admin Destination Placeholder */}
         <Route
           path={ROUTES.ADMIN_DASHBOARD}
           element={
