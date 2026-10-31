@@ -40,24 +40,7 @@ services:
       retries: 6
     restart: unless-stopped
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: brightloop_frontend
-    environment:
-      VITE_API_BASE_URL: http://localhost:8000
-      VITE_USE_MOCK_API: "false"
-      VITE_USE_MOCK_AUTH: "false"
-    depends_on:
-      api:
-        condition: service_healthy
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    restart: unless-stopped
+  
 
 volumes:
   brightloop_postgres_data:
