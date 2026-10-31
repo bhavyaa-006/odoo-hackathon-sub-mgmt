@@ -173,8 +173,141 @@ All product list/get endpoints require a valid JWT via the
 - Missing token → `403 {"detail":"Not authenticated"}`.
 - Valid token but insufficient role → `403 {"detail":"Administrator permission is required"}`.
 
+## Plan Service
+
+Plans are the second layer in the subscription workflow:
+**Products → Plans → Quotations → Subscriptions → Billing → Invoices**
+
+A plan captures:
+- Pricing and currency
+- Billing cadence (interval + interval count)
+- Availability window (`available_from` / `available_until`)
+- Lifecycle flags (`is_active`, `allow_pause`, `allow_renew`, `auto_close`, `allow_early_close`)
+- Optional product references (many-to-many)
+
+Historical correctness: editing a plan does **not** change existing subscription items or
+invoice line amounts — those services snapshot prices at their own creation time.
+
+### Plan model fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `String(36)` UUID | Primary key |
+| `name` | `String(200)` | Unique, required |
+| `description` | `Text` | Optional |
+| `price` | `Numeric(12,2)` | Non-negative, stored as Decimal |
+| `currency` | `String(3)` | ISO 4217 (e.g. `USD`, `EUR`) |
+| `billing_interval` | Enum | `day`, `week`, `month`, `year` |
+| `interval_count` | `Integer` | ≥ 1 |
+| `min_quantity` | `Integer` | ≥ 1 |
+| `available_from` | `Date` | Nullable |
+| `available_until` | `Date` | Nullable; must be ≥ `available_from` if both set |
+| `auto_close` | `Boolean` | Default `false` |
+| `allow_early_close` | `Boolean` | Default `false` |
+| `allow_pause` | `Boolean` | Default `true` |
+| `allow_renew` | `Boolean` | Default `true` |
+| `is_active` | `Boolean` | Default `true`; `false` hides plan from new subscriptions |
+| `created_at` | `DateTime(tz)` | UTC, auto-set |
+| `updated_at` | `DateTime(tz)` | UTC, auto-updated |
+
+### Supported billing intervals
+
+| Value | Meaning |
+|---|---|
+| `day` | Every N days |
+| `week` | Every N weeks |
+| `month` | Every N months |
+| `year` | Every N years |
+
+`interval_count` determines N. Example: `billing_interval=month, interval_count=3` = quarterly.
+
+### Plan API endpoints
+
+Base URL: `/api/v1/plans`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/plans` | admin | Create a plan — `201 Created` |
+| `GET` | `/api/v1/plans` | all roles | List / search / filter / paginate |
+| `GET` | `/api/v1/plans/{plan_id}` | all roles | Get plan by ID |
+| `PATCH` | `/api/v1/plans/{plan_id}` | admin | Partial update |
+| `DELETE` | `/api/v1/plans/{plan_id}` | admin | Archive (deactivate) — `204 No Content` |
+| `GET` | `/api/v1/plans/{plan_id}/availability` | all roles | Check availability for a date |
+| `POST` | `/api/v1/plans/{plan_id}/price` | all roles | Price breakdown for a quantity |
+
+#### List query parameters
+
+| Parameter | Description |
+|---|---|
+| `page` / `page_size` | Pagination (default 1 / 20, max 100) |
+| `search` | Substring match on plan name |
+| `billing_interval` | Filter by billing interval |
+| `is_active` | Filter by active status (ignored for customers — always `true`) |
+| `currency` | Filter by 3-letter currency code |
+| `sort_by` | `name` \| `price` \| `created_at` \| `updated_at` |
+| `sort_order` | `asc` \| `desc` |
+
+#### Availability check
+
+`GET /api/v1/plans/{plan_id}/availability?check_date=YYYY-MM-DD`
+
+Omit `check_date` to use today (UTC). Returns:
+
+```json
+{
+  "plan_id": "...",
+  "check_date": "2026-11-01",
+  "is_available": true,
+  "reason": null
+}
+```
+
+A plan is unavailable when:
+1. `is_active` is `false`
+2. `check_date` < `available_from` (plan not yet open)
+3. `check_date` > `available_until` (plan has closed)
+
+#### Price breakdown
+
+`POST /api/v1/plans/{plan_id}/price` with body `{"quantity": 5}`. Returns:
+
+```json
+{
+  "plan_id": "...",
+  "unit_price": "499.00",
+  "currency": "USD",
+  "quantity": 5,
+  "total_price": "2495.00",
+  "billing_interval": "month",
+  "interval_count": 1
+}
+```
+
+Quantity must be ≥ `plan.min_quantity`.
+
+### Plan authorization rules
+
+| Operation | Admin | Staff | Customer |
+|---|---|---|---|
+| Create plan | ✅ | ❌ (403) | ❌ (403) |
+| Update plan | ✅ | ❌ (403) | ❌ (403) |
+| Archive plan | ✅ | ❌ (403) | ❌ (403) |
+| List / get plans | ✅ all | ✅ all | ✅ active only |
+| Check availability | ✅ | ✅ | ✅ |
+| Price breakdown | ✅ | ✅ | ✅ active only |
+
+Customers automatically see only active plans (`is_active=true`). Inactive plans
+return `404` for customers on direct access, and are excluded from list results.
+
 ## Tests
 
 ```bash
 pytest tests/
 ```
+
+Test suite breakdown:
+
+| File | Tests |
+|---|---|
+| `tests/test_products.py` | 12 — product catalogue CRUD, variants, pricing, auth |
+| `tests/test_plans.py` | 48 — plan CRUD, validation, availability, pricing, auth, products |

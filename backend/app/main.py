@@ -4,7 +4,9 @@ from fastapi import FastAPI
 
 from app.config import AUTO_CREATE_SCHEMA
 from app.database import Base, engine
-from app.products import models as product_models  # noqa: F401 - registers metadata
+from app.plans import models as plan_models  # noqa: F401 - registers plan metadata
+from app.plans.router import router as plans_router
+from app.products import models as product_models  # noqa: F401 - registers product metadata
 from app.products.router import router as products_router
 
 
@@ -22,6 +24,7 @@ app = FastAPI(
 )
 
 app.include_router(products_router)
+app.include_router(plans_router)
 
 
 @app.get("/health")
