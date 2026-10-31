@@ -38,6 +38,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     Numeric,
     String,
     Text,
@@ -286,7 +287,7 @@ class InvoiceItem(Base):
     line_total: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
 
     # Arbitrary metadata (variant info, proration ratio, etc.)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSON().with_variant(JSONB, "postgresql"), nullable=True)
 
     # Relationships
     invoice: Mapped[Invoice] = relationship("Invoice", back_populates="items")

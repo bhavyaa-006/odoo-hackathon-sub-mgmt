@@ -79,8 +79,8 @@ def check_discount_eligibility(
     total_quantity: Annotated[int, Query(ge=0)] = 0,
     subscription_id: Annotated[uuid.UUID | None, Query()] = None,
     customer_id: Annotated[uuid.UUID | None, Query()] = None,
-    plan_ids: Annotated[list[uuid.UUID], Query()] = [],
-    product_ids: Annotated[list[uuid.UUID], Query()] = [],
+    plan_ids: Annotated[list[uuid.UUID] | None, Query()] = None,
+    product_ids: Annotated[list[uuid.UUID] | None, Query()] = None,
 ) -> DiscountEligibilityResponse:
     """
     Verify that a discount code is currently active, within its validity window,

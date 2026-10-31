@@ -1,0 +1,65 @@
+export const ROUTES = {
+  HOME: '/',
+  CUSTOMER_LOGIN: '/customer/login',
+  STAFF_LOGIN: '/staff/login',
+  ADMIN_LOGIN: '/admin/login',
+  CUSTOMER_REGISTER: '/customer/register',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
+
+  // Customer Portal Routes
+  CUSTOMER_DASHBOARD: '/customer',
+  CUSTOMER_SUBSCRIPTIONS: '/customer/subscriptions',
+  CUSTOMER_SUBSCRIPTION_DETAIL: '/customer/subscriptions/:id',
+  CUSTOMER_QUOTATIONS: '/customer/quotations',
+  CUSTOMER_QUOTATION_DETAIL: '/customer/quotations/:id',
+  CUSTOMER_INVOICES: '/customer/invoices',
+  CUSTOMER_INVOICE_DETAIL: '/customer/invoices/:id',
+  CUSTOMER_NOTIFICATIONS: '/customer/notifications',
+  CUSTOMER_PROFILE: '/customer/profile',
+  CUSTOMER_404: '/customer/404',
+
+  // Other Portals Placeholders
+  STAFF_DASHBOARD: '/staff',
+  ADMIN_DASHBOARD: '/admin',
+};
+
+export const ROLE_DESTINATIONS = {
+  customer: ROUTES.CUSTOMER_DASHBOARD,
+  staff: ROUTES.STAFF_DASHBOARD,
+  finance: ROUTES.STAFF_DASHBOARD,
+  admin: ROUTES.ADMIN_DASHBOARD,
+};
+
+export const PORTAL_CONFIG = {
+  customer: {
+    portalId: 'customer',
+    title: 'Customer Portal',
+    loginTitle: 'Welcome back',
+    loginSubtitle: 'Access your subscriptions, invoices, and billing.',
+    loginPath: ROUTES.CUSTOMER_LOGIN,
+    dashboardPath: ROUTES.CUSTOMER_DASHBOARD,
+    allowedRoles: ['customer'],
+    accentColor: 'teal',
+  },
+  staff: {
+    portalId: 'staff',
+    title: 'Staff Workspace',
+    loginTitle: 'Staff Workspace',
+    loginSubtitle: 'Sign in to manage customers and subscription operations.',
+    loginPath: ROUTES.STAFF_LOGIN,
+    dashboardPath: ROUTES.STAFF_DASHBOARD,
+    allowedRoles: ['staff', 'finance'],
+    accentColor: 'slateblue',
+  },
+  admin: {
+    portalId: 'admin',
+    title: 'Admin Console',
+    loginTitle: 'Admin Console',
+    loginSubtitle: 'Access platform configuration and administrative controls.',
+    loginPath: ROUTES.ADMIN_LOGIN,
+    dashboardPath: ROUTES.ADMIN_DASHBOARD,
+    allowedRoles: ['admin'],
+    accentColor: 'navy',
+  },
+};
