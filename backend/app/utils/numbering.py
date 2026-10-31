@@ -69,6 +69,16 @@ def next_subscription_number(db: Session, start_date: datetime.date) -> str:
     return f"SUB/{start_date.year}/{n:04d}"
 
 
+def next_payment_number(db: Session, payment_date: datetime.date) -> str:
+    """
+    Allocate and return the next payment number for the given year.
+    Format: PAY/2026/000001
+    Must be called inside an open transaction (caller commits).
+    """
+    n = _next(db, "PAY", payment_date.year)
+    return f"PAY/{payment_date.year}/{n:06d}"
+
+
 # ---------------------------------------------------------------------------
 # Internal: locked counter increment
 # ---------------------------------------------------------------------------

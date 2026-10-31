@@ -10,6 +10,7 @@ from app.database import Base, engine
 # create_all() is called at startup.
 # ---------------------------------------------------------------------------
 from app.products import models as product_models  # noqa: F401
+from app.payments import models as payment_models  # noqa: F401
 
 # ---------------------------------------------------------------------------
 # Routers
@@ -18,6 +19,7 @@ from app.products.router import router as products_router
 from app.taxes.router import router as taxes_router
 from app.discounts.router import router as discounts_router
 from app.billing.router import router as billing_router
+from app.payments.router import router as payments_router
 
 settings = get_settings()
 
@@ -44,6 +46,7 @@ app.include_router(products_router)
 app.include_router(taxes_router)
 app.include_router(discounts_router)
 app.include_router(billing_router)
+app.include_router(payments_router)
 
 
 # ---------------------------------------------------------------------------
