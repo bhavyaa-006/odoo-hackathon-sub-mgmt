@@ -219,3 +219,4 @@ def seed_default_users(db: Session) -> None:
             )
             db.add(user)
     db.commit()
+

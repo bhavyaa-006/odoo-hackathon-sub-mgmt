@@ -143,3 +143,4 @@ def reset_password(
     return MessageResponse(
         message="Your password has been successfully reset. You may now sign in with your new password."
     )
+

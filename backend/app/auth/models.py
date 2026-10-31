@@ -143,3 +143,4 @@ class PasswordResetToken(Base):
     )
 
     user: Mapped[User] = relationship("User", back_populates="reset_tokens")
+

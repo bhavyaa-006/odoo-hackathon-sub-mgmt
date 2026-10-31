@@ -1,10 +1,11 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: brightloop_db
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-brightloop}
       POSTGRES_USER: ${POSTGRES_USER:-brightloop}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-brightloop-dev-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oddo}
     volumes:
       - brightloop_postgres_data:/var/lib/postgresql/data
     ports:
@@ -19,22 +20,43 @@ services:
   api:
     build:
       context: ./backend
-    image: brightloop-product-service:latest
+      dockerfile: Dockerfile
+    container_name: brightloop_api
     environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-brightloop}:${POSTGRES_PASSWORD:-brightloop-dev-password}@db:5432/${POSTGRES_DB:-brightloop}
-      JWT_SECRET: ${JWT_SECRET:-development-only-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-brightloop}:${POSTGRES_PASSWORD:-oddo}@db:5432/${POSTGRES_DB:-brightloop}
+      JWT_SECRET: ${JWT_SECRET:-brightloop-super-secure-jwt-secret-key-production-ready}
       JWT_ALGORITHM: HS256
-      AUTO_CREATE_SCHEMA: "false"
+      AUTO_CREATE_SCHEMA: "true"
+      RUN_MIGRATIONS: "true"
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\""]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: brightloop_frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_USE_MOCK_API: "false"
+      VITE_USE_MOCK_AUTH: "false"
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     restart: unless-stopped
 
 volumes:

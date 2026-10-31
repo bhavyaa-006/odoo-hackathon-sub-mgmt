@@ -90,3 +90,4 @@ class UserProfileUpdate(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
