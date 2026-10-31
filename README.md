@@ -784,7 +784,81 @@ statement.
 
 ------------------------------------------------------------------------
 
-## 19. Scope Notes
+## 19. Docker Setup
+
+Docker Compose runs the Product Service together with PostgreSQL. The API
+container applies the Alembic migrations before it starts, and the database
+data is persisted in the `brightloop_postgres_data` Docker volume.
+
+### Prerequisites
+
+- Docker Desktop (or Docker Engine) with Docker Compose v2.
+- Port `8000` available on the host for the API.
+
+### Start the application
+
+From the repository root, create a local environment file and set secure
+values before using anything beyond local development:
+
+```bash
+cp .env.example .env
+```
+
+At minimum, replace these development defaults in `.env`:
+
+```dotenv
+JWT_SECRET=replace-with-a-long-random-secret
+POSTGRES_PASSWORD=replace-with-a-strong-password
+```
+
+Build the API image and start both containers in the background:
+
+```bash
+docker compose up --build -d
+```
+
+The services are:
+
+| Service | Address | Purpose |
+| --- | --- | --- |
+| `api` | http://localhost:8000 | FastAPI Product Service |
+| `db` | Internal Docker network | PostgreSQL data store |
+
+### Verify the startup
+
+```bash
+docker compose ps
+curl http://localhost:8000/health
+```
+
+Both services should show `healthy`; the health endpoint returns:
+
+```json
+{"status":"ok"}
+```
+
+Open the API documentation at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+### Useful commands
+
+```bash
+# Follow API startup, migration, and request logs
+docker compose logs -f api
+
+# Stop containers while preserving PostgreSQL data
+docker compose down
+
+# Stop containers and permanently remove the local database volume
+docker compose down -v
+
+# Rebuild after application or Dockerfile changes
+docker compose up --build -d
+```
+
+`docker compose down -v` irreversibly deletes the local database volume. Use
+it only when you intentionally want a fresh development database.
+
+## 20. Scope Notes
 
 This README combines the requirements explicitly stated in the hackathon
 problem statement with additional implementation recommendations.
@@ -802,7 +876,7 @@ problem statement with additional implementation recommendations.
 
 ------------------------------------------------------------------------
 
-## 20. Definition of Done
+## 21. Definition of Done
 
 The project is ready for demonstration when a complete business flow can
 be shown:
