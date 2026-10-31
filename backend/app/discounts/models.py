@@ -116,7 +116,7 @@ class Discount(Base):
 
     # Type and value
     discount_type: Mapped[DiscountType] = mapped_column(
-        SAEnum(DiscountType, name="discount_type_enum", create_type=True),
+        SAEnum(DiscountType, name="discount_type_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
     value: Mapped[float] = mapped_column(
@@ -125,14 +125,14 @@ class Discount(Base):
 
     # Scope
     scope: Mapped[DiscountScope] = mapped_column(
-        SAEnum(DiscountScope, name="discount_scope_enum", create_type=True),
+        SAEnum(DiscountScope, name="discount_scope_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=DiscountScope.SUBSCRIPTION,
     )
 
     # Recurrence behaviour
     recurrence: Mapped[DiscountRecurrence] = mapped_column(
-        SAEnum(DiscountRecurrence, name="discount_recurrence_enum", create_type=True),
+        SAEnum(DiscountRecurrence, name="discount_recurrence_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=DiscountRecurrence.ONCE,
     )

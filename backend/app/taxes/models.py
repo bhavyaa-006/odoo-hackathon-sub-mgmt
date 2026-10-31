@@ -72,7 +72,7 @@ class TaxRule(Base):
 
     # Tax type / structure
     tax_type: Mapped[TaxType] = mapped_column(
-        SAEnum(TaxType, name="tax_type_enum", create_type=True),
+        SAEnum(TaxType, name="tax_type_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=TaxType.GST,
     )
@@ -213,7 +213,7 @@ class TaxCalculation(Base):
 
     # Transaction classification
     transaction_type: Mapped[TransactionType] = mapped_column(
-        SAEnum(TransactionType, name="transaction_type_enum", create_type=True),
+        SAEnum(TransactionType, name="transaction_type_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
 
