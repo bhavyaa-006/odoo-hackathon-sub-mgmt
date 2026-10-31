@@ -128,14 +128,14 @@ class Invoice(Base):
 
     # Invoice classification
     kind: Mapped[InvoiceKind] = mapped_column(
-        SAEnum(InvoiceKind, name="invoice_kind_enum", create_type=True),
+        SAEnum(InvoiceKind, name="invoice_kind_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=InvoiceKind.RECURRING,
     )
 
     # Status lifecycle: draft → confirmed → partially_paid / paid; or → void
     status: Mapped[InvoiceStatus] = mapped_column(
-        SAEnum(InvoiceStatus, name="invoice_status_enum", create_type=True),
+        SAEnum(InvoiceStatus, name="invoice_status_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=InvoiceStatus.DRAFT,
         index=True,
@@ -335,7 +335,7 @@ class BillingRun(Base):
     is_dry_run: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     status: Mapped[BillingRunStatus] = mapped_column(
-        SAEnum(BillingRunStatus, name="billing_run_status_enum", create_type=True),
+        SAEnum(BillingRunStatus, name="billing_run_status_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=BillingRunStatus.RUNNING,
     )
@@ -406,7 +406,7 @@ class BillingRunItem(Base):
     period_end: Mapped[date] = mapped_column(Date, nullable=False)
 
     status: Mapped[BillingRunItemStatus] = mapped_column(
-        SAEnum(BillingRunItemStatus, name="billing_run_item_status_enum", create_type=True),
+        SAEnum(BillingRunItemStatus, name="billing_run_item_status_enum", create_type=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=BillingRunItemStatus.PENDING,
     )
