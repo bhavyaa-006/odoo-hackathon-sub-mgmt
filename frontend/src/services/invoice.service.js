@@ -10,7 +10,10 @@ export const invoiceService = {
       return mockAdapter.getInvoices(params);
     }
     const response = await api.get('/portal/invoices', { params });
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.items)) return data.items;
+    return [];
   },
 
   /**

@@ -9,13 +9,17 @@ export const notificationService = {
     if (isMockApiEnabled()) {
       return mockAdapter.getNotifications(params);
     }
-    const response = await api.get('/outbox', { params });
-    const data = response.data;
-    if (Array.isArray(data)) {
-      const unreadCount = data.filter((m) => !m.is_read).length;
-      return { messages: data, unread_count: unreadCount };
+    try {
+      const response = await api.get('/portal/notifications', { params });
+      const data = response.data;
+      if (Array.isArray(data)) {
+        const unreadCount = data.filter((m) => !m.is_read).length;
+        return { messages: data, unread_count: unreadCount };
+      }
+      return data || { messages: [], unread_count: 0 };
+    } catch {
+      return { messages: [], unread_count: 0 };
     }
-    return data;
   },
 
   /**

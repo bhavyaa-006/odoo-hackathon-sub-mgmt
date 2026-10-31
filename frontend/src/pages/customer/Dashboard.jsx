@@ -44,9 +44,11 @@ export const CustomerDashboard = () => {
         subscriptionService.getSubscriptions(),
         invoiceService.getInvoices(),
       ]);
+      const subsList = Array.isArray(subsData) ? subsData : (subsData?.items || []);
+      const invsList = Array.isArray(invsData) ? invsData : (invsData?.items || []);
       setOverview(overviewData);
-      setSubscriptions(subsData || []);
-      setInvoices(invsData || []);
+      setSubscriptions(subsList);
+      setInvoices(invsList);
     } catch (err) {
       setError(err.userMessage || 'Failed to load dashboard metrics. Please retry.');
     } finally {
@@ -64,9 +66,11 @@ export const CustomerDashboard = () => {
           invoiceService.getInvoices(),
         ]);
         if (isMounted) {
+          const subsList = Array.isArray(subsData) ? subsData : (subsData?.items || []);
+          const invsList = Array.isArray(invsData) ? invsData : (invsData?.items || []);
           setOverview(overviewData);
-          setSubscriptions(subsData || []);
-          setInvoices(invsData || []);
+          setSubscriptions(subsList);
+          setInvoices(invsList);
         }
       } catch (err) {
         if (isMounted) {
@@ -84,8 +88,12 @@ export const CustomerDashboard = () => {
     };
   }, []);
 
-  const activeSubscriptions = subscriptions.filter((s) => s.status === 'active');
-  const overdueInvoices = invoices.filter((i) => i.status === 'overdue' && i.outstanding_minor > 0);
+  const subsList = Array.isArray(subscriptions) ? subscriptions : [];
+  const invsList = Array.isArray(invoices) ? invoices : [];
+  const activeSubscriptions = subsList.filter((s) => s?.status === 'active');
+  const overdueInvoices = invsList.filter(
+    (i) => (i?.status === 'overdue' || i?.is_overdue) && ((i?.outstanding_minor ?? 0) > 0 || (i?.outstanding ?? 0) > 0)
+  );
 
   return (
     <div className="space-y-8">
@@ -234,7 +242,7 @@ export const CustomerDashboard = () => {
             to="/customer/subscriptions"
             className="inline-flex items-center gap-1 text-xs font-semibold text-[#1E88E5] hover:text-[#1565C0]"
           >
-            <span>View All ({subscriptions.length})</span>
+            <span>View All ({subsList.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -244,7 +252,7 @@ export const CustomerDashboard = () => {
             <CardSkeleton />
             <CardSkeleton />
           </div>
-        ) : subscriptions.length === 0 ? (
+        ) : subsList.length === 0 ? (
           <EmptyState
             icon={Layers}
             title="You don't have any subscriptions yet."
@@ -254,7 +262,7 @@ export const CustomerDashboard = () => {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {subscriptions.slice(0, 4).map((sub) => (
+            {subsList.slice(0, 4).map((sub) => (
               <SubscriptionCard key={sub.id} subscription={sub} />
             ))}
           </div>
@@ -276,7 +284,7 @@ export const CustomerDashboard = () => {
             to="/customer/invoices"
             className="inline-flex items-center gap-1 text-xs font-semibold text-[#1E88E5] hover:text-[#1565C0]"
           >
-            <span>View All Invoices ({invoices.length})</span>
+            <span>View All Invoices ({invsList.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -286,7 +294,7 @@ export const CustomerDashboard = () => {
             <CardSkeleton />
             <CardSkeleton />
           </div>
-        ) : invoices.length === 0 ? (
+        ) : invsList.length === 0 ? (
           <EmptyState
             icon={CreditCard}
             title="No invoices generated yet."
@@ -294,7 +302,7 @@ export const CustomerDashboard = () => {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {invoices.slice(0, 4).map((inv) => (
+            {invsList.slice(0, 4).map((inv) => (
               <InvoiceCard
                 key={inv.id}
                 invoice={inv}

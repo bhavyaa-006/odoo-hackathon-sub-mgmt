@@ -31,7 +31,7 @@ router = APIRouter(prefix="/portal", tags=["Customer Portal"])
 
 
 # ---------------------------------------------------------------------------
-# Request/Response Schemas
+# Request/Response Schemas & Serializers
 # ---------------------------------------------------------------------------
 
 class PortalPaymentRequest(BaseModel):
@@ -40,6 +40,46 @@ class PortalPaymentRequest(BaseModel):
     payment_reference: str | None = None
     bank_name: str | None = None
     notes: str | None = None
+
+
+def serialize_portal_invoice(inv: Invoice) -> dict[str, Any]:
+    """Serialize Invoice ORM model to dictionary with both major and minor values."""
+    from datetime import date as _dt_date
+
+    total_val = float(inv.total or 0)
+    paid_val = float(inv.amount_paid or 0)
+    outstanding_val = max(0.0, total_val - paid_val)
+    status_str = inv.status.value if hasattr(inv.status, "value") else str(inv.status)
+    today = _dt_date.today()
+    is_overdue = inv.due_date is not None and inv.due_date < today and outstanding_val > 0
+
+    return {
+        "id": str(inv.id),
+        "invoice_number": inv.invoice_number,
+        "customer_id": str(inv.customer_id),
+        "status": "overdue" if is_overdue else status_str,
+        "is_overdue": is_overdue,
+        "issue_date": str(inv.issue_date) if inv.issue_date else None,
+        "due_date": str(inv.due_date) if inv.due_date else None,
+        "currency": inv.currency or "INR",
+        "total": total_val,
+        "total_minor": int(round(total_val * 100)),
+        "amount_paid": paid_val,
+        "paid_minor": int(round(paid_val * 100)),
+        "outstanding": outstanding_val,
+        "outstanding_minor": int(round(outstanding_val * 100)),
+        "items": [
+            {
+                "id": str(item.id),
+                "description": item.description,
+                "quantity": float(item.quantity or 1),
+                "unit_price": float(item.unit_price or 0),
+                "total": float(item.line_total or 0),
+                "line_total": float(item.line_total or 0),
+            }
+            for item in (inv.items or [])
+        ],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -70,10 +110,10 @@ def get_customer_overview(
         page=1,
         page_size=5,
     )
-    recent_invoices = [
-        invoice_service.enrich_invoice_response(inv)
-        for inv in invoices
-    ]
+    recent_invoices = [serialize_portal_invoice(inv) for inv in invoices]
+
+    total_unpaid_float = float(total_unpaid)
+    total_unpaid_minor = int(round(total_unpaid_float * 100))
 
     return {
         "customer": {
@@ -82,9 +122,15 @@ def get_customer_overview(
             "email": user.email if user else current_user.email,
             "company_name": user.company_name if user else current_user.company_name,
         },
-        "active_subscriptions_count": 1,
-        "total_unpaid_amount": float(total_unpaid),
+        "active_subscriptions": 0,
+        "active_subscriptions_count": 0,
+        "outstanding_balance_minor": total_unpaid_minor,
+        "total_unpaid_amount": total_unpaid_float,
         "unpaid_invoices_count": unpaid_count,
+        "next_invoice_date": None,
+        "estimated_next_invoice_minor": 0,
+        "pending_quotations": 0,
+        "currency": "INR",
         "recent_invoices": recent_invoices,
         "recent_subscriptions": [],
     }
@@ -167,7 +213,7 @@ def list_customer_invoices(
         page_size=page_size,
     )
     return {
-        "items": [invoice_service.enrich_invoice_response(inv) for inv in invoices],
+        "items": [serialize_portal_invoice(inv) for inv in invoices],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -189,7 +235,7 @@ def get_customer_invoice(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice not found.",
         )
-    return invoice_service.enrich_invoice_response(inv)
+    return serialize_portal_invoice(inv)
 
 
 @router.post(
@@ -292,11 +338,12 @@ def list_customer_quotations(
 
 
 @router.get("/notifications")
+@router.get("/outbox")
 def list_customer_notifications(
     current_user: CurrentUser,
     db: DbSession,
 ) -> dict[str, Any]:
-    return {"items": [], "unread_count": 0}
+    return {"items": [], "messages": [], "unread_count": 0}
 
 
 @router.post("/notifications/read-all")

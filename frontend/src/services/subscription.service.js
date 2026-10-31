@@ -13,7 +13,10 @@ export const subscriptionService = {
       return mockAdapter.getSubscriptions(params);
     }
     const response = await api.get('/portal/subscriptions', { params });
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.items)) return data.items;
+    return [];
   },
 
   /**

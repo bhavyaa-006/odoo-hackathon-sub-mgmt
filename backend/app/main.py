@@ -101,9 +101,15 @@ app.include_router(payments_router)
 
 
 # ---------------------------------------------------------------------------
-# Health check
+# Health check & Notifications Outbox
 # ---------------------------------------------------------------------------
 @app.get("/health", tags=["Health"])
 def health_check():
     """Basic liveness probe for the service."""
     return {"status": "ok"}
+
+
+@app.get("/outbox", tags=["Notifications"])
+def outbox_fallback():
+    """Fallback endpoint for notification outbox queries."""
+    return {"messages": [], "unread_count": 0}
