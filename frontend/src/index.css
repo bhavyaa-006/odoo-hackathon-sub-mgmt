@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary-navy: #1F4E79;
+  --color-mint-green: #A8D5BA;
+  --color-amber-yellow: #FFC107;
+  --color-light-blue: #E3F2FD;
+  --color-slate-blue: #4B6584;
+  --color-off-white: #F5F5F5;
+  --color-charcoal: #333333;
+  --color-teal: #00796B;
+  --color-coral: #FF6F61;
+  --color-bright-blue: #1E88E5;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #333333;
+  background-color: #F5F5F5;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Print Specific Rules for Invoices */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  aside, header, nav, button {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .print-document {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+  }
+}
