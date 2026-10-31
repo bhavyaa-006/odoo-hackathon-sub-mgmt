@@ -1,0 +1,43 @@
+# ── Python ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ── Environment / secrets ────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Git ──────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── Docker ──────────────────────────────────────────────
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# ── IDE / editor ────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+
+# ── OS ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────────────────
+*.log
+
+# ── Node.js (frontend) ───────────────────────────────────
+node_modules/
+dist/
